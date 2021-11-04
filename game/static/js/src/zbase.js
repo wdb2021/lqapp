@@ -1,0 +1,7 @@
+class LQGame {
+    constructor(id) {
+    }
+
+}
+
+
