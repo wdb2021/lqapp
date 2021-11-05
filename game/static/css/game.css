@@ -6,3 +6,34 @@
     user-select: none;
 }
 
+.lq-game-menu-field {
+    width: 20vw;
+    position: relative;
+    top: 28vh;
+    left: 9vw;
+
+
+}
+
+.lq-game-menu-field-item {
+    margin: 25px;
+    color: white;
+    width: 18vw;
+    height: 7vh;
+    font-size: 5vh;
+    font-style: italic;
+    padding: 3vh;
+    text-align: center;
+    background-image: linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%);
+    border-radius: 15px;
+    letter-spacing: 0.5vw;
+    cursor: pointer;
+
+}
+
+.lq-game-menu-field-item:hover {
+    transform:scale(1.2);
+    transition: 100ms;
+}
+
+
