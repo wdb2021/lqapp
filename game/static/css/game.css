@@ -6,13 +6,23 @@
     user-select: none;
 }
 
+.lq-game-menu-title {
+    width: 75vw;
+    position: relative;
+    top: 5vh;
+    left: 7vw;
+    font-size: 5vh;
+    font-style: Times New Roman;
+    color: ffdde1; 
+
+}
+
 .lq-game-menu-field {
     width: 20vw;
     position: relative;
-    top: 28vh;
+    top: 17vh;
     left: 9vw;
-
-
+    text-align: center;
 }
 
 .lq-game-menu-field-item {

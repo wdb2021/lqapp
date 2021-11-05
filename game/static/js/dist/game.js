@@ -3,6 +3,9 @@ class LQGameMenu {
         this.root = root;
         this.$menu = $(`
 <div class="lq-game-menu">
+    <div class="lq-game-menu-title" box-shadow: 10px 10px grey;>
+        凌骎的小游戏
+    </div>
     <div class="lq-game-menu-field">
         <div class="lq-game-menu-field-item lq-game-menu-field-item-single-mode">
             单人模式
@@ -32,7 +35,7 @@ class LQGameMenu {
     add_listening_events() {
         let outer = this;
         this.$single_mode.click(function(){
-            console.log("click multi mode");
+            console.log("click single mode");
             outer.hide();
             outer.root.playground.show();
         });

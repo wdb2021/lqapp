@@ -3,6 +3,9 @@ class LQGameMenu {
         this.root = root;
         this.$menu = $(`
 <div class="lq-game-menu">
+    <div class="lq-game-menu-title">
+        凌骎的小游戏
+    </div>
     <div class="lq-game-menu-field">
         <div class="lq-game-menu-field-item lq-game-menu-field-item-single-mode">
             单人模式
