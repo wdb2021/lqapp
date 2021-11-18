@@ -1,0 +1,55 @@
+.lq-game-menu {
+    width:100%;
+    height:100%;
+    background-image: url("/static/image/menu/background.jpg");
+    background-size: 100% 100%;
+    user-select: none;
+}
+
+.lq-game-menu-title {
+    width: 75vw;
+    position: relative;
+    top: 5vh;
+    left: 7vw;
+    font-size: 5vh;
+    font-family: YouYuan;
+    color: ffdde1; 
+    font-weight: 1000;
+
+}
+
+.lq-game-menu-field {
+    width: 20vw;
+    position: relative;
+    top: 17vh;
+    left: 9vw;
+    text-align: center;
+}
+
+.lq-game-menu-field-item {
+    margin: 25px;
+    color: white;
+    width: 18vw;
+    height: 7vh;
+    font-size: 5vh;
+    font-style: italic;
+    padding: 3vh;
+    text-align: center;
+    background-image: linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%);
+    border-radius: 25px;
+    letter-spacing: 0.5vw;
+    cursor: pointer;
+
+}
+
+.lq-game-menu-field-item:hover {
+    transform:scale(1.2);
+    transition: 100ms;
+}
+
+.lq-game-playground {
+    width: 100%;
+    height: 100%;
+    user-select: none;
+}
+
