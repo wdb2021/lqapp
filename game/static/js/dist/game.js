@@ -21,6 +21,7 @@ class LQGameMenu {
     </div>
 </div>
 `);
+        this.$menu.hide();
         this.root.$lq_game.append(this.$menu);
         this.$single_mode = this.$menu.find('.lq-game-menu-field-item-single-mode');
         this.$multi_mode = this.$menu.find('.lq-game-menu-field-item-multi-mode');
@@ -200,6 +201,11 @@ class Player extends LQGameObject {
         this.spent_time = 0;
 
         this.cur_skill = null;
+
+        if(this.is_me) {
+            this.img = new Image();
+            this.img.src = this.playground.root.settings.photo;
+        }
     }
 
     start() {
@@ -321,10 +327,20 @@ class Player extends LQGameObject {
     }
 
     render() {
-        this.ctx.beginPath();
-        this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-        this.ctx.fillStyle = this.color;
-        this.ctx.fill();
+        if(this.is_me) {
+            this.ctx.save();
+            this.ctx.beginPath();
+            this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2, false);
+            this.ctx.stroke();
+            this.ctx.clip();
+            this.ctx.drawImage(this.img, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
+            this.ctx.restore();
+        } else {
+            this.ctx.beginPath();
+            this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+            this.ctx.fillStyle = this.color;
+            this.ctx.fill();
+        }
     }
 
     on_destroy() {
@@ -443,20 +459,89 @@ class LQGamePlayground {
     }
 
 }
+class Settings {
+    constructor(root) {
+        this.root = root;
+        this.platform = "WEB";
+        if(this.root.AcOS) this.platform = "ACAPP";
+        this.username = "";
+        this.photo = "";
+
+        this.$settings = $(`
+<div class="lq-game-settings" >
+
+</div>
+
+`);
+
+        this.root.$lq_game.append(this.$settings);
+
+        this.start();
+
+    }
+
+    start() {
+        this.getinfo();
+    }
+
+    
+    register() {
+    }
+
+    login() {
+
+    }
+
+
+    getinfo() {
+        let outer = this;
+
+        $.ajax({
+            url: "https://lingqin.com.cn/settings/getinfo/",
+            type: "GET",
+            data: {
+                platform: outer.platform,
+            },
+            success: function(resp) {
+                console.log(resp);
+                if(resp.result === "success" ) {
+                    outer.username = resp.username;
+                    outer.photo = resp.photo;
+
+                    outer.hide();
+                    outer.root.menu.show();
+                } else {
+                    outer.login();
+                }
+            }
+        });
+    }
+
+    hide() {
+        this.$settings.hide();
+    }
+
+    show() {
+        this.$settings.show();
+    }
+
+}
 export class LQGame {
-    constructor(id) {
-        console.log("lqgame src success")
+    constructor(id, AcOS) {
         this.id = id;
         this.$lq_game = $('#' + id);
+        this.AcOS = AcOS;
+
+        this.settings = new Settings(this)
         this.menu = new LQGameMenu(this);
         this.playground = new LQGamePlayground(this);
         
         this.start();
+        console.log("lqgame src success");
     }
 
     start() {
 
     }
 }
-
 

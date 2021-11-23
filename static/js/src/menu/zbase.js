@@ -21,6 +21,7 @@ class LQGameMenu {
     </div>
 </div>
 `);
+        this.$menu.hide();
         this.root.$lq_game.append(this.$menu);
         this.$single_mode = this.$menu.find('.lq-game-menu-field-item-single-mode');
         this.$multi_mode = this.$menu.find('.lq-game-menu-field-item-multi-mode');
