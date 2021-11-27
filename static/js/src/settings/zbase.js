@@ -92,7 +92,7 @@ class Settings {
         this.$login_password = this.$login.find(".lq-game-settings-password input");
         this.$login_submit = this.$login.find(".lq-game-settings-submit button");
         this.$login_error_message = this.$login.find(".lq-game-settings-error-message");
-        this.$login_register = this.$login.find(".lq-game-ettings-option");
+        this.$login_register = this.$login.find(".lq-game-settings-option");
         
 
         this.$login.hide();
@@ -128,8 +128,13 @@ class Settings {
 
     add_listening_events_login() {
         let outer = this;
+
         this.$login_register.click(function() {
+            console.log("click_login");
             outer.register();
+        });
+        this.$login_submit.click(function() {
+            outer.login_on_remote();
         });
     }
 
@@ -138,8 +143,75 @@ class Settings {
         this.$register_login.click(function() {
             outer.login();
         });
+        this.$register_submit.click(function() {
+            outer.register_on_remote();
+        });
     }
 
+    login_on_remote() {   //在远程服务器登录
+        let outer = this;
+        let username = this.$login_username.val();
+        let password = this.$login_password.val();
+        this.$login_error_message.empty();
+
+        $.ajax({
+            url: "https://lingqin.com.cn/settings/login/",
+            type: "GET",
+            data: {
+                username: username,
+                password: password,
+            },
+            success: function(resp) {
+                console.log(resp);
+                if(resp.result === "success") {
+                    location.reload();
+                } else {
+                    outer.$login_error_message.html(resp.result);
+                }
+            }
+        });
+    }
+
+    register_on_remote() {
+        let outer = this;
+        let username = this.$register_username.val();
+        let password = this.$register_password.val();
+        let password_confirm = this.$register_password_confirm.val();
+        this.$register_error_message.empty();
+
+        $.ajax({
+            url: "https://lingqin.com.cn/settings/register/",
+            type: "GET",
+            data: {
+                username: username,
+                password: password,
+                password_confirm: password_confirm,
+
+            },
+            success: function(resp) {
+                console.log(resp);
+                if(resp.result === "success") {
+                    location.reload();
+                } else {
+                    outer.$register_error_message.html(resp.result);
+                }
+            }
+        });
+    }
+
+    logout_on_remote() {
+        if(this.platform === "ACAPP") return false;
+        $.ajax({
+            url: "https://lingqin.com.cn/settings/logout",
+            type: "GET",
+            success: function(resp) {
+                console.log(resp);
+                if (resp.result === "success" ) {
+                    location.reload();
+                }
+            }
+        });
+    }
 
     register() {
         this.$login.hide();
