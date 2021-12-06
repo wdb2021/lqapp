@@ -39,7 +39,7 @@ class Settings {
             <img width="30" src="https://lingqin.com.cn/static/image/settings/acwing_logo.png">
             <br>
             <div>
-                acwing 一键登录
+                一键登录
             </div>
         </div>
 
@@ -107,7 +107,7 @@ class Settings {
 
         this.$register.hide();
 
-
+        this.$acwing_login = this.$settings.find('.lq-game-settings-acwing img')
 
         this.root.$lq_game.append(this.$settings);
 
@@ -124,6 +124,10 @@ class Settings {
         let outer = this;
         this.add_listening_events_login();
         this.add_listening_events_register();
+
+        this.$acwing_login.click(function() {
+            outer.acwing_login();
+        });
     }
 
     add_listening_events_login() {
@@ -135,6 +139,19 @@ class Settings {
         });
         this.$login_submit.click(function() {
             outer.login_on_remote();
+        });
+    }
+
+    acwing_login() {
+        $.ajax({
+            url: "https://lingqin.com.cn/settings/acwing/web/apply_code/",
+            type: "GET",
+            success: function(resp) {
+                console.log(resp);
+                if(resp.result === "success") {
+                    window.location.replace(resp.apply_code_url);
+                }
+            }
         });
     }
 
