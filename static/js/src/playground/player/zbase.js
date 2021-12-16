@@ -61,6 +61,15 @@ class Player extends LQGameObject {
         });
 
         $(window).keydown(function(e) {
+            if(e.which ===13) {
+                console.log(e.which);  //打开聊天框
+                    outer.playground.chat_field.show_input();
+                    return false;
+            } else if (e.which === 27) {   ///esc //关闭聊天框
+                    outer.playground.chat_field.hide_input();
+                
+            }
+
             if(e.which === 81) {
                 outer.cur_skill = "fireball";
                 return false;

@@ -122,11 +122,87 @@ let LQ_GAME_ANIMATION = function(timestamp) {
 }
 
 requestAnimationFrame(LQ_GAME_ANIMATION);  //一秒调用60次
+class ChatField {
+    constructor(playground) {
+        this.playground = playground;
+
+        this.$history = $(`<div class="lq-game-chat-field-history">历史记录</div>`);
+        this.$input = $(`<input type="text" class="lq-game-chat-field-input">`);
+
+        this.$history.hide();
+        this.$input.hide();
+        this.func_id = null;   //记录show函数id， 清除5秒计时
+
+        this.playground.$playground.append(this.$history);
+        this.playground.$playground.append(this.$input);
+
+        this.start();
+    }
+
+    start() {
+        this.add_listening_events();
+    }
+
+    add_listening_events() {
+        let outer = this;
+
+        this.$input.keydown(function(e) {
+            if (e.which === 27) {     //ESC
+                outer.hide_input();
+                return false;
+            } else if( e.which === 13) {   //ENTER
+                let username = outer.playground.root.settings.username;
+                let text = outer.$input.val();
+                if (text) {
+                    outer.$input.val("");
+                    outer.add_message(username, text);
+                    outer.playground.mps.send_message(text);
+                }
+                return false;
+            }
+        });
+    }
+
+    render_message(message) {
+        return $(`<div>${message}</div>`);
+    }
+
+    add_message(username, text) {
+        let message = `[${username}]${text}`;
+        this.$history.append(this.render_message(message));
+        this.$history.scrollTop(this.$history[0].scrollHeight);
+    }
+
+    show_history() {
+        let outer = this;
+        this.$history.fadeIn();
+
+        if(this.func_id) clearTimeout(this.func_id);
+
+        this.func_id = setTimeout(function() {
+            outer.$history.fadeOut();
+            outer.func_if = null;   //延长打开时间
+        }, 5000);
+    }
+
+
+    show_input() {
+        this.show_history();
+
+        this.$input.show();
+        this.$input.focus();
+    }
+    hide_input() {
+        this.$input.hide();
+        this.playground.game_map.$canvas.focus();
+    }
+
+}
 class GameMap extends LQGameObject {
     constructor(playground) {
         super();
         this.playground = playground;
-        this.$canvas = $(`<canvas></canvas>`);
+        this.$canvas = $(`<canvas tabindex=0></canvas>`);
         this.ctx = this.$canvas[0].getContext('2d');
         this.ctx.canvas.width = this.playground.width;
         this.ctx.canvas.height = this.playground.height;
@@ -134,6 +210,7 @@ class GameMap extends LQGameObject {
     }
 
     start() {
+        this.$canvas.focus();
     }
 
     resize() {
@@ -264,6 +341,15 @@ class Player extends LQGameObject {
         });
 
         $(window).keydown(function(e) {
+            if(e.which ===13) {
+                console.log(e.which);  //打开聊天框
+                    outer.playground.chat_field.show_input();
+                    return false;
+            } else if (e.which === 27) {   ///esc //关闭聊天框
+                    outer.playground.chat_field.hide_input();
+                
+            }
+
             if(e.which === 81) {
                 outer.cur_skill = "fireball";
                 return false;
@@ -475,11 +561,13 @@ class MultiPlayerSocket {
             let data = JSON.parse(e.data);
             console.log(data);
             let uuid = data.uuid;
-            if(uuid === this.uuid) return false;
+            if(uuid === outer.uuid) return false;
 
             let event = data.event;
             if (event === "create_player") {
                 outer.receive_create_player(uuid, data.username, data.photo);
+            } else if (event === "message") {
+                outer.receive_message(uuid, data.text);
             }
         };
     }
@@ -511,6 +599,21 @@ class MultiPlayerSocket {
         this.playground.players.push(player);
     }
 
+
+    
+    send_message(text) {
+        let outer = this;
+        this.ws.send(JSON.stringify({
+            'events': "message",
+            'uuid': outer.uuid,
+            'text': text,
+        }));
+    }
+
+    receive_message(uuid, text) {
+        let player = this.get_player(uuid);
+        player.playground.chat_field.add_message(player.username, text);
+    }
 }
 class LQGamePlayground {
     constructor(root) {
@@ -560,10 +663,12 @@ class LQGamePlayground {
         this.players.push(new Player(this, this.width / 2 / this.scale, 0.5, 0.05, "white", 0.15, "me", this.root.settings.username, this.root.settings.photo));
         
         if(mode === "single mode") {
+            this.chat_field = new ChatField(this);
             for(let i=0; i<5; i++) {
                 this.players.push(new Player(this, this.width / 2 / this.scale, 0.5, 0.05, this.get_random_color(), 0.15, "robot"));
             }
         } else if (mode === "multi mode") {
+            this.chat_field = new ChatField(this);
             this.mps = new MultiPlayerSocket(this);
             this.mps.uuid = this.players[0].uuid;
 

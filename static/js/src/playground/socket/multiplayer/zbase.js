@@ -18,11 +18,13 @@ class MultiPlayerSocket {
             let data = JSON.parse(e.data);
             console.log(data);
             let uuid = data.uuid;
-            if(uuid === this.uuid) return false;
+            if(uuid === outer.uuid) return false;
 
             let event = data.event;
             if (event === "create_player") {
                 outer.receive_create_player(uuid, data.username, data.photo);
+            } else if (event === "message") {
+                outer.receive_message(uuid, data.text);
             }
         };
     }
@@ -54,4 +56,19 @@ class MultiPlayerSocket {
         this.playground.players.push(player);
     }
 
+
+    
+    send_message(text) {
+        let outer = this;
+        this.ws.send(JSON.stringify({
+            'events': "message",
+            'uuid': outer.uuid,
+            'text': text,
+        }));
+    }
+
+    receive_message(uuid, text) {
+        let player = this.get_player(uuid);
+        player.playground.chat_field.add_message(player.username, text);
+    }
 }
