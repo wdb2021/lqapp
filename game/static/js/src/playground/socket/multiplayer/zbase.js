@@ -11,14 +11,14 @@ class MultiPlayerSocket {
         this.receive();
     }
 
-    receive () {
+    receive() {
         let outer = this;
 
         this.ws.onmessage = function(e) {
-            let data = JSON.parse(e.data);
+            let data = JSON.parse(e.data);   //将字符串变成字典
             console.log(data);
             let uuid = data.uuid;
-            if(uuid === outer.uuid) return false;
+            if(uuid === outer.uuid) return false; //组内发送屏蔽自己 
 
             let event = data.event;
             if (event === "create_player") {

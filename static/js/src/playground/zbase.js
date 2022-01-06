@@ -45,12 +45,14 @@ class LQGamePlayground {
         this.players = [];
         this.players.push(new Player(this, this.width / 2 / this.scale, 0.5, 0.05, "white", 0.15, "me", this.root.settings.username, this.root.settings.photo));
         
+        console.log(mode);
+
         if(mode === "single mode") {
             this.chat_field = new ChatField(this);
             for(let i=0; i<5; i++) {
                 this.players.push(new Player(this, this.width / 2 / this.scale, 0.5, 0.05, this.get_random_color(), 0.15, "robot"));
             }
-        } else if (mode === "multi mode") {
+        } else if (mode === "multi mode") {  //mps: MultiPlayerSocket
             this.chat_field = new ChatField(this);
             this.mps = new MultiPlayerSocket(this);
             this.mps.uuid = this.players[0].uuid;

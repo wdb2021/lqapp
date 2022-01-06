@@ -13,7 +13,7 @@ class LQGameObject {
     create_uuid() {
         let res = "";
         for(let i=0; i<8; i++) {
-            let x = parseInt(Math.floor(Math.random() * 10));
+            let x = parseInt(Math.floor(Math.random() * 10)); //floor 下取整， 返回[0, 1)的数
             res += x;
         }
         return res;

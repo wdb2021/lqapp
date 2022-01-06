@@ -11,7 +11,7 @@ class MultiPlayerSocket {
         this.receive();
     }
 
-    receive () {
+    receive() {
         let outer = this;
 
         this.ws.onmessage = function(e) {
