@@ -1,5 +1,6 @@
 export class LQGame {
     constructor(id, AcOS) {
+        console.log(AcOS);
         this.id = id;
         this.$lq_game = $('#' + id);
         this.AcOS = AcOS;

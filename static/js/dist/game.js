@@ -156,7 +156,7 @@ class ChatField {
                 if (text) {
                     outer.$input.val("");
                     outer.add_message(username, text);
-                    outer.playground.mps.send_message(text);
+                    outer.playground.mps.send_message(username, text);
                 }
                 return false;
             }
@@ -303,6 +303,7 @@ class Player extends LQGameObject {
         this.eps = 0.01;
         this.friction = 0.9;
         this.spent_time = 0;
+        this.fireballs = [];
 
         this.cur_skill = null;
 
@@ -330,12 +331,23 @@ class Player extends LQGameObject {
         this.playground.game_map.$canvas.mousedown(function(e) {
             const rect = outer.ctx.canvas.getBoundingClientRect();
             if(e.which === 3) {
-                outer.move_to((e.clientX - rect.left) / outer.playground.scale, (e.clientY - rect.top) / outer.playground.scale);
-            
-            } else if (e.which === 1) {
-                if(outer.cur_skill === "fireball") {
-                    outer.shoot_fireball((e.clientX - rect.left) / outer.playground.scale, (e.clientY - rect.top) / outer.playground.scale);
+                let tx = (e.clientX - rect.left) / outer.playground.scale;
+                let ty = (e.clientY - rect.top) / outer.playground.scale;
+                outer.move_to(tx, ty);
+
+                if (outer.playground.mode === "multi mode") {
+                    outer.playground.mps.send_move_to(tx, ty);
                 }
+            } else if (e.which === 1) {
+                let tx = (e.clientX - rect.left) / outer.playground.scale;
+                let ty = (e.clientY - rect.top) / outer.playground.scale;
+                if(outer.cur_skill === "fireball") {
+                    let fireball = outer.shoot_fireball(tx, ty);
+                    if (outer.playground.mode === "multi mode") {
+                        outer.playground.mps.send_shoot_fireball(tx, ty, fireball.uuid);
+                    }
+                }
+
                 outer.cur_skill = null;
             }
         });
@@ -380,7 +392,20 @@ class Player extends LQGameObject {
         let color = "orange";
         let speed = 0.4;
         let move_length = 1;
-        new FireBall(this.playground, this, x, y, radius, vx, vy, color, speed, move_length, 0.01);
+        let fireball = new FireBall(this.playground, this, x, y, radius, vx, vy, color, speed, move_length, 0.01);
+        this.fireballs.push(fireball);
+
+        return fireball;
+    }
+
+    destroy_fireball(uuid) {
+        for(let i = 0; i < this.fireballs.length; i++) {
+            let fireball = this.fireballs[i];
+            if (fireball.uuid === uuid) {
+                fireball.destroy();
+                break;
+            }
+        }
     }
 
     is_attacked(angle, damage) {
@@ -404,6 +429,13 @@ class Player extends LQGameObject {
         this.damage_y = Math.sin(angle);
         this.damage_speed = damage * 70;
         this.speed *= 0.8;
+    }
+
+    receive_attack(x, y, angle, damage, ball_uuid, attacker) {
+        attacker.destroy_fireball(ball_uuid);
+        this.x = x;
+        this.y = y;
+        this.is_attacked(angle, damage);
     }
 
     update() {
@@ -466,7 +498,9 @@ class Player extends LQGameObject {
     on_destroy() {
         for(let i=0; i<this.playground.players.length; i++) {
             if(this.playground.players[i] ===this) {
-                this.playground.players.splice(i, 1);}
+                this.playground.players.splice(i, 1);
+                break;
+            }
         }
     }
 
@@ -497,18 +531,30 @@ class FireBall extends LQGameObject {
             this.destroy();
             return false;
         }
-        let moved = Math.min(this.move_length, this.speed*this.timedelta/1000);
+        this.update_move();
+        
+        if (this.player.character !== "enemy") {
+            this.update_attack();
+        }
+
+        this.render();
+    }
+
+    update_move() {
+        let moved = Math.min(this.move_length, this.speed * this.timedelta/1000);
         this.x += this.vx*moved;
         this.y += this.vy*moved;
         this.move_length -= moved;
+    }
 
-        for(let i=0; i<this.playground.players.length; i++) {
+    update_attack() {
+        for (let i=0; i<this.playground.players.length; i++) {
             let player = this.playground.players[i];
             if(this.player !== player && this.is_collision(player)) {
                 this.attack(player);
+                break;
             }
         }
-        this.render();
     }
 
     get_dist(x1, y1, x2, y2) {
@@ -527,6 +573,11 @@ class FireBall extends LQGameObject {
     attack(player) {
         let angle = Math.atan2(player.y - this.y, player.x - this.x);
         player.is_attacked(angle, this.damage);
+
+        if (this.playground.mode === "multi mode") {
+            this.playground.mps.send_attack(player.uuid, player.x, player.y, angle, this.damage, this.uuid);
+        }
+
         this.destroy();
 
     }
@@ -539,6 +590,15 @@ class FireBall extends LQGameObject {
         this.ctx.fill();
     }
 
+    on_destory() {
+        let fireballs = this.player.fireballs;
+        for (let i=0; i<fireballs.length; i++) {
+            if (fireballs[i] === this) {
+                fireballs.splice(i, 1);
+                break;
+            }
+        }
+    }
 
 }
 class MultiPlayerSocket {
@@ -558,17 +618,24 @@ class MultiPlayerSocket {
         let outer = this;
 
         this.ws.onmessage = function(e) {
-            let data = JSON.parse(e.data);
+            let data = JSON.parse(e.data);   //将字符串变成字典
             console.log(data);
             let uuid = data.uuid;
-            if(uuid === outer.uuid) return false;
+            if(uuid === outer.uuid) return false; //组内发送屏蔽自己 
 
             let event = data.event;
             if (event === "create_player") {
                 outer.receive_create_player(uuid, data.username, data.photo);
             } else if (event === "message") {
                 outer.receive_message(uuid, data.text);
+            } else if (event === "move_to") {
+                outer.receive_move_to(uuid, data.tx, data.ty);
+            } else if (event === "shoot_fireball") {
+                outer.receive_shoot_fireball(uuid, data.tx, data.ty, data.ball_uuid);
+            } else if (event === "attack") {
+                outer.receive_attack(uuid, data.attackee_uuid, data.x, data.y, data.angle, data.damage, data.ball_uuid);
             }
+
         };
     }
 
@@ -580,6 +647,16 @@ class MultiPlayerSocket {
             'username': username,
             'photo': photo,
         }));
+    }
+
+    get_player(uuid) {
+        let players = this.playground.players;
+        for (let i = 0; i < players.length; i++) {
+            let player = players[i];
+            if (player.uuid === uuid) 
+                return player;
+        }
+        return null;
     }
 
     receive_create_player(uuid, username, photo) {
@@ -599,12 +676,70 @@ class MultiPlayerSocket {
         this.playground.players.push(player);
     }
 
+    send_move_to(tx, ty) {
+        let outer = this;
+        this.ws.send(JSON.stringify({
+            'event': "move_to",
+            'uuid': outer.uuid,
+            'tx': tx,
+            'ty': ty,
+        }));
+    }
 
+    receive_move_to(uuid, tx, ty) {
+        let player = this.get_player(uuid);
+        
+        if(player) {
+            player.move_to(tx, ty);
+        }
+    }
+
+    send_shoot_fireball(tx, ty, ball_uuid) {
+        let outer = this;
+        this.ws.send(JSON.stringify({
+            'event': "shoot_fireball",
+            'uuid': outer.uuid,
+            'tx': tx, 
+            'ty': ty,
+            'ball_uuid': ball_uuid,
+        }));
+    }
+
+    receive_shoot_fireball(uuid, tx, ty, ball_uuid) {
+        let player = this.get_player(uuid);
+        if(player) {
+            let fireball = player.shoot_fireball(tx, ty);
+            fireball.uuid = ball_uuid;
+        }
+    }
+
+    //同步攻击
+    send_attack(attackee_uuid, x, y, angle, damage, ball_uuid) {
+        let outer = this;
+        this.ws.send(JSON.stringify({
+            'event': "attack",
+            'uuid': outer.uuid,
+            'attackee_uuid': attackee_uuid,
+            'x': x,
+            'y': y,
+            'angle': angle,
+            'damage': damage,
+            'ball_uuid': ball_uuid,
+        }));
+    }
+
+    receive_attack(uuid, attackee_uuid, x, y, angle, damage, ball_uuid) {
+        let attacker = this.get_player(uuid);
+        let attackee = this.get_player(attackee_uuid);
+        if (attacker && attackee) {
+            attackee.receive_attack(x, y, angle, damage, ball_uuid, attacker);
+        }
+    }
     
     send_message(text) {
         let outer = this;
         this.ws.send(JSON.stringify({
-            'events': "message",
+            'event': "message",
             'uuid': outer.uuid,
             'text': text,
         }));
@@ -656,6 +791,8 @@ class LQGamePlayground {
         this.width = this.$playground.width();
         this.height = this.$playground.height();
         this.game_map = new GameMap(this);
+
+        this.mode = mode;
 
         this.resize();
 
@@ -768,7 +905,7 @@ class Settings {
             <img width="30" src="https://lingqin.com.cn/static/image/settings/acwing_logo.png">
             <br>
             <div>
-                acwing 一键登录
+                一键登录
             </div>
         </div>
     </div>
@@ -781,7 +918,7 @@ class Settings {
         this.$login_submit = this.$login.find(".lq-game-settings-submit button");
         this.$login_error_message = this.$login.find(".lq-game-settings-error-message");
         this.$login_register = this.$login.find(".lq-game-settings-option");
-        
+
 
         this.$login.hide();
 
@@ -905,17 +1042,20 @@ class Settings {
     }
 
     logout_on_remote() {
-        if(this.platform === "ACAPP") return false;
-        $.ajax({
-            url: "https://lingqin.com.cn/settings/logout",
-            type: "GET",
-            success: function(resp) {
-                console.log(resp);
-                if (resp.result === "success" ) {
-                    location.reload();
+        if(this.platform === "ACAPP") {
+            this.root.AcOS.api.window.close();
+        } else {
+            $.ajax({
+                url: "https://lingqin.com.cn/settings/logout",
+                type: "GET",
+                success: function(resp) {
+                    console.log(resp);
+                    if (resp.result === "success" ) {
+                        location.reload();
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     register() {
@@ -965,6 +1105,7 @@ class Settings {
 }
 export class LQGame {
     constructor(id, AcOS) {
+        console.log(AcOS);
         this.id = id;
         this.$lq_game = $('#' + id);
         this.AcOS = AcOS;

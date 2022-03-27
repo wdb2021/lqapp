@@ -80,7 +80,7 @@ class Settings {
             <img width="30" src="https://lingqin.com.cn/static/image/settings/acwing_logo.png">
             <br>
             <div>
-                acwing 一键登录
+                一键登录
             </div>
         </div>
     </div>
@@ -93,7 +93,7 @@ class Settings {
         this.$login_submit = this.$login.find(".lq-game-settings-submit button");
         this.$login_error_message = this.$login.find(".lq-game-settings-error-message");
         this.$login_register = this.$login.find(".lq-game-settings-option");
-        
+
 
         this.$login.hide();
 
@@ -217,17 +217,20 @@ class Settings {
     }
 
     logout_on_remote() {
-        if(this.platform === "ACAPP") return false;
-        $.ajax({
-            url: "https://lingqin.com.cn/settings/logout",
-            type: "GET",
-            success: function(resp) {
-                console.log(resp);
-                if (resp.result === "success" ) {
-                    location.reload();
+        if(this.platform === "ACAPP") {
+            this.root.AcOS.api.window.close();
+        } else {
+            $.ajax({
+                url: "https://lingqin.com.cn/settings/logout",
+                type: "GET",
+                success: function(resp) {
+                    console.log(resp);
+                    if (resp.result === "success" ) {
+                        location.reload();
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     register() {
