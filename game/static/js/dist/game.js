@@ -16,8 +16,11 @@ class LQGameMenu {
         </div>
         <br>
         <div class="lq-game-menu-field-item lq-game-menu-field-item-settings">
-            退出
+            设置
         </div>
+    </div>
+    <div class="lq-game-menu-instruction">
+        游戏说明: 按Q选取火球，再按鼠标左键释放火球。火球击中敌方玩家后，会造成血量伤害、溅射和击退效果。同时敌方轮廓会变小，在累计一定伤害后，角色消失。
     </div>
 </div>
 `);
