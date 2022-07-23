@@ -185,7 +185,7 @@ class ChatField {
         this.func_id = setTimeout(function() {
             outer.$history.fadeOut();
             outer.func_if = null;   //延长打开时间
-        }, 5000);
+        }, 10000);
     }
 
 
@@ -739,11 +739,13 @@ class MultiPlayerSocket {
         }
     }
     
-    send_message(text) {
+    send_message(username, text) {
         let outer = this;
+        console.log(text);
         this.ws.send(JSON.stringify({
             'event': "message",
             'uuid': outer.uuid,
+            'username': username,
             'text': text,
         }));
     }
@@ -751,6 +753,7 @@ class MultiPlayerSocket {
     receive_message(uuid, text) {
         let player = this.get_player(uuid);
         player.playground.chat_field.add_message(player.username, text);
+        player.playground.chat_field.show_history();
     }
 }
 class LQGamePlayground {
@@ -828,9 +831,14 @@ class LQGamePlayground {
 }
 class Settings {
     constructor(root) {
+
+        if(window.location.host === "app500.acapp.acwing.com.cn") {
+            window.location.replace("https://www.lingqin.com.cn/");
+        }
+
         this.root = root;
         this.platform = "WEB";
-        if(this.root.AcOS) this.platform = "ACAPP";
+        if(this.root.AcWingOS) this.platform = "ACAPP";
         this.username = "";
         this.photo = "";
 
@@ -944,8 +952,12 @@ class Settings {
     }
 
     start() {
+        if (this.platform === "ACAPP") {
+            this.getinfo_acapp();
+        } else {
         this.getinfo();
         this.add_listening_events();
+        }
     }
 
     add_listening_events() {
@@ -1046,7 +1058,7 @@ class Settings {
 
     logout_on_remote() {
         if(this.platform === "ACAPP") {
-            this.root.AcOS.api.window.close();
+            this.root.AcWingOS.api.window.close();
         } else {
             $.ajax({
                 url: "https://lingqin.com.cn/settings/logout",
@@ -1072,6 +1084,33 @@ class Settings {
 
     }
 
+    acapp_login(appid, redirect_uri, scope, state) {
+        let outer = this;
+         
+        this.root.AcWingOS.api.oauth2.authorize(appid, redirect_uri, scope, state, function(resp) {
+            console.log(resp);
+            if (resp.result === "success" ) {
+                outer.username = username;
+                outer.photo = photo;
+                outer.hide();
+                outer.root.menu.show();
+            }
+        });
+    }
+
+    getinfo_acapp() {
+        let outer = this;
+
+        $.ajax({
+            url: "https://lingqin.com.cn/settings/acwing/acapp/apply_code",
+            type: "GET",
+            success: function(resp) {
+                if (resp.result === "success") {
+                    outer.acapp_login(resp.appid, resp.redirect_uri, resp.scope, resp.state);
+                }
+            }
+        });
+    }
 
     getinfo() {
         let outer = this;
@@ -1125,4 +1164,5 @@ export class LQGame {
 
     }
 }
+
 

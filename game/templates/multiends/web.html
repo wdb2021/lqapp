@@ -7,13 +7,23 @@
 </head>
 
 <body style="margin: 0">
-    <div id="lq_game_12345678"></div>
+    
+    <div id="lq_game"></div>
     <script type="module">
         import {LQGame} from "{% static 'js/dist/game.js' %}";
         $(document).ready(function(){
-            let lq_game = new LQGame("lq_game_12345678");
+            let lq_game = new LQGame("lq_game");
         });
     </script>
+    <!--
+    <div id="ac_game"></div>
+    <script type="module">
+        import {AcGame} from "{% static 'js/dist/agame.js' %}";
+        $(document).ready(function() {
+            let ac_game = new AcGame("ac_game");
+        });
+    </script> 
+    -->
 </body>
 
 

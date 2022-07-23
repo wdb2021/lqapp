@@ -58,7 +58,7 @@ class ChatField {
         this.func_id = setTimeout(function() {
             outer.$history.fadeOut();
             outer.func_if = null;   //延长打开时间
-        }, 5000);
+        }, 10000);
     }
 
 

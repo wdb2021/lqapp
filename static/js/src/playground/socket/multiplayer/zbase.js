@@ -133,11 +133,13 @@ class MultiPlayerSocket {
         }
     }
     
-    send_message(text) {
+    send_message(username, text) {
         let outer = this;
+        console.log(text);
         this.ws.send(JSON.stringify({
             'event': "message",
             'uuid': outer.uuid,
+            'username': username,
             'text': text,
         }));
     }
@@ -145,5 +147,6 @@ class MultiPlayerSocket {
     receive_message(uuid, text) {
         let player = this.get_player(uuid);
         player.playground.chat_field.add_message(player.username, text);
+        player.playground.chat_field.show_history();
     }
 }

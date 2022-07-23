@@ -1,3 +1,0 @@
-template 是存储html文本
-urls.py 路由，连接数量， 将其变成目录
-

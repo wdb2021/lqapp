@@ -1,8 +1,13 @@
 class Settings {
     constructor(root) {
+
+        if(window.location.host === "app500.acapp.acwing.com.cn") {
+            window.location.replace("https://www.lingqin.com.cn/");
+        }
+
         this.root = root;
         this.platform = "WEB";
-        if(this.root.AcOS) this.platform = "ACAPP";
+        if(this.root.AcWingOS) this.platform = "ACAPP";
         this.username = "";
         this.photo = "";
 
@@ -116,8 +121,12 @@ class Settings {
     }
 
     start() {
+        if (this.platform === "ACAPP") {
+            this.getinfo_acapp();
+        } else {
         this.getinfo();
         this.add_listening_events();
+        }
     }
 
     add_listening_events() {
@@ -218,7 +227,7 @@ class Settings {
 
     logout_on_remote() {
         if(this.platform === "ACAPP") {
-            this.root.AcOS.api.window.close();
+            this.root.AcWingOS.api.window.close();
         } else {
             $.ajax({
                 url: "https://lingqin.com.cn/settings/logout",
@@ -244,6 +253,33 @@ class Settings {
 
     }
 
+    acapp_login(appid, redirect_uri, scope, state) {
+        let outer = this;
+         
+        this.root.AcWingOS.api.oauth2.authorize(appid, redirect_uri, scope, state, function(resp) {
+            console.log(resp);
+            if (resp.result === "success" ) {
+                outer.username = username;
+                outer.photo = photo;
+                outer.hide();
+                outer.root.menu.show();
+            }
+        });
+    }
+
+    getinfo_acapp() {
+        let outer = this;
+
+        $.ajax({
+            url: "https://lingqin.com.cn/settings/acwing/acapp/apply_code",
+            type: "GET",
+            success: function(resp) {
+                if (resp.result === "success") {
+                    outer.acapp_login(resp.appid, resp.redirect_uri, resp.scope, resp.state);
+                }
+            }
+        });
+    }
 
     getinfo() {
         let outer = this;
