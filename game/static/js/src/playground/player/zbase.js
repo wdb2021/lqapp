@@ -27,13 +27,27 @@ class Player extends LQGameObject {
 
         this.cur_skill = null;
 
-        if(this.character !== "robot") {
+        if (this.character !== "robot") {
             this.img = new Image();
             this.img.src = this.photo;
+        }
+
+        if (this.character === "me") {
+            this.fireball_coldtime = 1; //单位：秒
+            this.fireball_img = new Image();
+            this.fireball_img.src = "https://cdn.acwing.com/media/article/image/2021/12/02/1_9340c86053-fireball.png";
         }
     }
 
     start() {
+        this.playground.player_count ++;
+        this.playground.notice_board.write("已就绪: " + this.playground.player_count + "人");
+
+        if (this.playground.player_count >=3) {
+            this.playground.state = "fighting";
+            this.playground.notice_board.write("Fighting");
+        }
+
         if(this.character === "me") {
             this.add_listening_events();
         } else if(this.character === "robot") {
@@ -49,6 +63,9 @@ class Player extends LQGameObject {
             return false;
         });
         this.playground.game_map.$canvas.mousedown(function(e) {
+            if (outer.playground.state !== "fighting") 
+                return false;
+
             const rect = outer.ctx.canvas.getBoundingClientRect();
             if(e.which === 3) {
                 let tx = (e.clientX - rect.left) / outer.playground.scale;
@@ -59,6 +76,9 @@ class Player extends LQGameObject {
                     outer.playground.mps.send_move_to(tx, ty);
                 }
             } else if (e.which === 1) {
+                if (outer.fireball_coldtime > outer.eps)
+                    return false;
+
                 let tx = (e.clientX - rect.left) / outer.playground.scale;
                 let ty = (e.clientY - rect.top) / outer.playground.scale;
                 if(outer.cur_skill === "fireball") {
@@ -76,12 +96,14 @@ class Player extends LQGameObject {
             if(e.which ===13) {
                 console.log(e.which);  //打开聊天框
                     outer.playground.chat_field.show_input();
-                    return false;
+                    return false;i
             } else if (e.which === 27) {   ///esc //关闭聊天框
                     outer.playground.chat_field.hide_input();
                 
             }
-
+            
+            if (outer.fireball_coldtime > outer.eps) 
+                return false;
             if(e.which === 81) {
                 outer.cur_skill = "fireball";
                 return false;
@@ -114,6 +136,8 @@ class Player extends LQGameObject {
         let move_length = 1;
         let fireball = new FireBall(this.playground, this, x, y, radius, vx, vy, color, speed, move_length, 0.01);
         this.fireballs.push(fireball);
+
+        this.fireball_coldtime = 1; //技能重置
 
         return fireball;
     }
@@ -159,12 +183,23 @@ class Player extends LQGameObject {
     }
 
     update() {
+        this.spent_time += this.timedelta/1000;
+
+        if (this.character === "me" && this.playground.state === "fighting") {
+            this.update_coldtime();
+        }
         this.update_move();
+
         this.render();
     }
 
+    update_coldtime() {
+        this.fireball_coldtime -= this.timedelta / 1000;
+        this.fireball_coldtime = Math.max(this.fireball_coldtime, 0); 
+
+    }
+
     update_move() {
-        this.spent_time += this.timedelta/1000;
         if(this.character === "robot" && this.spent_time>4 && Math.random() < 1/300.0) {
             let player = this.playground.players[Math.floor(Math.random()*this.playground.players.length)];
             let tx = player.x+player.speed*this.vx * this.timedelta/1000 * 0.3;
@@ -213,6 +248,23 @@ class Player extends LQGameObject {
             this.ctx.fillStyle = this.color;
             this.ctx.fill();
         }
+
+        if (this.character === "me" && this.playground.state === "fighting") {
+            this.render_skill_coldtime();
+        }
+    }
+
+    render_skill_coldtime() {
+        let scale = this.playground.scale;
+        let x = 1.5, y= 0.9, r=0.04;
+        
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.arc(x * scale, y * scale, r * scale, 0, Math.PI*2, false);
+        this.ctx.stroke();
+        this.ctx.clip();
+        this.ctx.drawImage(this.fireball_img, (x - r) * scale, (y - r) * scale, r * 2 * scale, r * 2 * scale);
+        this.ctx.restore();
     }
 
     on_destroy() {
